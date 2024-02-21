@@ -11,6 +11,9 @@ from tqdm import tqdm
 from transformers import ViTFeatureExtractor, TFAutoModel
 import random
 import tensorflow as tf
+from tensorflow.keras.layers import Flatten, Dense, GlobalAveragePooling2D
+from tensorflow.keras.models import Model
+
 os.environ['PYTHONHASHSEED']=str(42)
 random.seed(42)
 np.random.seed(42)
@@ -62,22 +65,49 @@ class ResNet101FeatureExtractorModel:
         return np.array(features)
     
     
-class VGGFeatureExtractorModel:
-    def __init__(self):
-        # Initialize the feature extractor
-        # Load VGG16 model for feature extraction
-        self.vgg_model = VGG16(weights='imagenet', include_top=False, pooling='avg')
+# class VGGFeatureExtractorModel:
+#     def __init__(self):
+#         # Initialize the feature extractor
+#         # Load VGG16 model for feature extraction
+#         self.vgg_model = VGG16(weights='imagenet', include_top=False, pooling='avg')
         
-     # Image loading and feature extraction
+#      # Image loading and feature extraction
+#     def extract_features(self, image_paths):
+#         features = []
+#         for img_path in tqdm(image_paths, desc="Processing Images : VGG"):
+#             # Load the image file, resizing it to 224x224 pixels (required by VGG16 model)
+#             img = load_img(img_path, target_size=(224, 224))
+#             img_array = img_to_array(img)
+#             # Expand dimensions to fit model input format
+#             img_array_expanded = np.expand_dims(img_array, axis=0)
+#             # Preprocess the image data
+#             img_preprocessed = preprocess_input(img_array_expanded)
+#             # Extract features
+#             feature = self.vgg_model.predict(img_preprocessed)[0]
+#             features.append(feature)
+#         return np.array(features)
+    
+    
+class VGGFeatureExtractorModel:
+    def __init__(self, output_size):
+        # Load VGG16 model without the top layer and with pooling set to None
+        base_model = VGG16(weights='imagenet', include_top=False, pooling=None)
+        # Add GlobalAveragePooling2D layer to reduce dimensions
+        x = GlobalAveragePooling2D()(base_model.output)
+        # Flatten the output to make it suitable for the Dense layer
+        x = Flatten()(x)
+        # Add a Dense layer with the desired output size
+        x = Dense(output_size, activation='relu')(x)
+        # Create the new model
+        self.vgg_model = Model(inputs=base_model.input, outputs=x)
+
     def extract_features(self, image_paths):
         features = []
-        for img_path in tqdm(image_paths, desc="Processing Images : VGG"):
-            # Load the image file, resizing it to 224x224 pixels (required by VGG16 model)
+        for img_path in tqdm(image_paths, desc="Processing Images: VGG"):
+            # Load and preprocess the image
             img = load_img(img_path, target_size=(224, 224))
             img_array = img_to_array(img)
-            # Expand dimensions to fit model input format
             img_array_expanded = np.expand_dims(img_array, axis=0)
-            # Preprocess the image data
             img_preprocessed = preprocess_input(img_array_expanded)
             # Extract features
             feature = self.vgg_model.predict(img_preprocessed)[0]
@@ -93,7 +123,7 @@ class Geds:
     def __init__(self, id_dataset: str, num_nearest: int, geo: bool = True, euclidean: bool = True,
                  sequence: str = '', scale: bool = True, input_target_context=True,
                  input_dist_context_geo=True, input_dist_context_eucl=False, scale_euclidean=True,
-                 scale_geo=False, image_features=True, image_feature_extractor="VGG", image_scale = True):
+                 scale_geo=False, image_features=True, image_feature_extractor="VGG", image_scale = True, num_image_features=None):
         """
 
         :param id_dataset:
@@ -122,9 +152,10 @@ class Geds:
         self.input_dist_context_eucl = input_dist_context_eucl
         self.scale_euclidean = scale_euclidean
         self.scale_geo = scale_geo
+        self.num_image_features = num_image_features
         if image_feature_extractor.lower() == "vgg":
             print(f"===============USING VGG FOR IMAGE FEATURE EXTRACTION ===============")
-            self.image_feature_extractor = VGGFeatureExtractorModel()
+            self.image_feature_extractor = VGGFeatureExtractorModel(self.num_image_features)
         elif image_feature_extractor.lower() == "vit":
             self.image_feature_extractor = ViTFeatureExtractorModel()
             print(f"===============USING ViT FOR IMAGE FEATURE EXTRACTION ===============")
@@ -156,6 +187,12 @@ class Geds:
                 elif self.id_dataset == 'poa':
                     train_image_paths = sorted_image_paths[:12294]  # 0-17286 for training
                     test_image_paths = sorted_image_paths[12294:]
+                elif self.id_dataset == 'sp':
+                    train_image_paths = sorted_image_paths[:55078]  # 0-17286 for training
+                    test_image_paths = sorted_image_paths[55078:]
+                elif self.id_dataset == 'fc':
+                    train_image_paths = sorted_image_paths[:66510]  # 0-17286 for training
+                    test_image_paths = sorted_image_paths[66510:]
                 print(f'train_size: {len(train_image_paths)}')
                 print(f'test_size: {len(test_image_paths)}')
                 if len(train_image_paths) != 0 and len(test_image_paths) != None:

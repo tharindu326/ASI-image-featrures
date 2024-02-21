@@ -168,14 +168,14 @@ if __name__ == "__main__":
                         "size_embedded":50,
                         "num_nearest_geo":45,
                         "num_nearest_eucli":45,
-                        "id_dataset":'poa',
+                        "id_dataset":'sp',
                         "epochs":450,
                         "optimier":'adam',
                         "validation_split": 0.1,
-                        "label":'asi_poa_vgg',
+                        "label":'asi_sp_vgg_64',
                         "early_stopping": False,
                         "graph_label":'matrix',
-                        "num_image_features": 512,
+                        "num_image_features": 64,
                         "scale": True,
                         "image_feature_extractor": 'vgg', # 'vgg'; num_image_features-512 , 'vit'; num_image_features-768, 'resnet101'; num_image_features-2048
                         "image_scale": True

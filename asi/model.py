@@ -62,6 +62,7 @@ class AttentionSpatialInterpolationModel:
         self.input_dist_context_eucl = input_dist_context_eucl
         self.scale_euclidean = scale_euclidean
         self.scale_geo = scale_geo
+        self.num_image_features = num_image_features
         # Location of the files
         self.path = PATH
 
@@ -90,7 +91,7 @@ class AttentionSpatialInterpolationModel:
                                                      scale_euclidean=self.scale_euclidean,
                                                      scale_geo=self.scale_geo, image_features=image_features, 
                                                      image_feature_extractor=image_feature_extractor,
-                                                     image_scale = image_scale)()
+                                                     image_scale = image_scale, num_image_features=self.num_image_features)()
         
         # the shape of the features datasets
         # input
